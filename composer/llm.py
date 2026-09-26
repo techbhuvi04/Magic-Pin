@@ -1,4 +1,4 @@
-"""Optional LLM client — OpenAI or Anthropic when keys present; else None."""
+"""Optional LLM client — Groq, OpenAI, or Anthropic when keys present; else None."""
 
 from __future__ import annotations
 
@@ -7,15 +7,32 @@ import os
 import re
 from typing import Optional
 
+# Load .env file if present
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 
 class LLMClient:
     def __init__(self) -> None:
         self.provider: Optional[str] = None
         self.model: str = "template"
         self._client = None
+        groq_key = os.environ.get("GROQ_API_KEY", "").strip()
         openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
         anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-        if openai_key:
+        if groq_key:
+            try:
+                from groq import Groq
+
+                self._client = Groq(api_key=groq_key)
+                self.provider = "groq"
+                self.model = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
+            except Exception:
+                pass
+        if not self.provider and openai_key:
             try:
                 from openai import OpenAI
 
@@ -24,7 +41,7 @@ class LLMClient:
                 self.model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
             except Exception:
                 pass
-        elif anthropic_key:
+        if not self.provider and anthropic_key:
             try:
                 from anthropic import Anthropic
 
@@ -41,7 +58,7 @@ class LLMClient:
     def complete(self, system: str, user: str) -> str:
         if not self.available:
             raise RuntimeError("No LLM configured")
-        if self.provider == "openai":
+        if self.provider in ("groq", "openai"):
             resp = self._client.chat.completions.create(
                 model=self.model,
                 temperature=0,
