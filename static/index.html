@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vera — magicpin AI Bot Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:       #002970;
+      --navy2:      #003580;
+      --navy3:      #004098;
+      --blue:       #00BAF2;
+      --blue-dark:  #009FD4;
+      --blue-light: #E8F7FD;
+      --blue-mid:   #C2EAFB;
+      --white:      #FFFFFF;
+      --bg:         #F0F6FF;
+      --surface:    #FFFFFF;
+      --surface2:   #F5F9FF;
+      --border:     #D0E6F5;
+      --border2:    #A8D4EE;
+      --text:       #0A1931;
+      --text2:      #3A5880;
+      --text3:      #7A9EC0;
+      --green:      #00C48C;
+      --amber:      #F7A500;
+      --red:        #E5352D;
+      --radius:     16px;
+      --radius-sm:  10px;
+      --shadow:     0 2px 12px rgba(0,41,112,0.08);
+      --shadow-md:  0 4px 24px rgba(0,41,112,0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+    /* NAV */
+    nav {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px; height: 60px;
+      box-shadow: 0 2px 16px rgba(0,41,112,0.25);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--blue);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800; color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(0,186,242,0.3);
+    }
+    .brand-name { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .brand-sub  { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 1px; }
+    .status-pill {
+      display: flex; align-items: center; gap: 7px;
+      padding: 5px 14px; border-radius: 999px;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      font-size: 13px; font-weight: 500; color: #fff; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .status-pill:hover { background: rgba(255,255,255,0.18); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse-dot 2s infinite; }
+    .status-dot.offline { background: var(--red); animation: none; }
+    @keyframes pulse-dot {
+      0%,100% { box-shadow: 0 0 0 0 rgba(0,196,140,0.5); }
+      50%      { box-shadow: 0 0 0 5px rgba(0,196,140,0); }
+    }
+    .port-badge {
+      font-size: 11px; color: rgba(255,255,255,0.45);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* HERO BANNER */
+    .hero {
+      background: linear-gradient(120deg, var(--navy) 0%, #005CB8 60%, var(--blue-dark) 100%);
+      padding: 42px 40px 36px; color: #fff; position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; right: -80px; top: -80px;
+      width: 360px; height: 360px; border-radius: 50%;
+      background: rgba(0,186,242,0.12); pointer-events: none;
+    }
+    .hero::after {
+      content: ''; position: absolute; left: 30%; bottom: -60px;
+      width: 220px; height: 220px; border-radius: 50%;
+      background: rgba(255,255,255,0.04); pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-block; padding: 3px 12px; border-radius: 999px;
+      background: rgba(0,186,242,0.22); border: 1px solid rgba(0,186,242,0.5);
+      font-size: 11px; font-weight: 700; color: var(--blue); letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 14px;
+    }
+    .hero h1 { font-size: clamp(24px,3.5vw,38px); font-weight: 800; letter-spacing: -1px; line-height: 1.15; }
+    .hero p   { color: rgba(255,255,255,0.7); font-size: 14px; margin-top: 10px; line-height: 1.6; max-width: 520px; }
+    .stats-row { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+    .stat-chip {
+      padding: 10px 18px; border-radius: 12px;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(8px); min-width: 88px;
+    }
+    .stat-chip .val { font-size: 22px; font-weight: 700; color: var(--blue); }
+    .stat-chip .lbl { font-size: 10px; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 2px; }
+
+    /* TABS */
+    .tabs-bar {
+      background: var(--white); border-bottom: 2px solid var(--border);
+      display: flex; gap: 0; padding: 0 40px;
+      overflow-x: auto; white-space: nowrap;
+      box-shadow: var(--shadow);
+    }
+    .tab-btn {
+      padding: 14px 22px; border: none; background: transparent;
+      color: var(--text3); cursor: pointer; font-family: inherit;
+      font-size: 14px; font-weight: 500;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--navy); }
+    .tab-btn.active { color: var(--blue-dark); border-bottom-color: var(--blue); font-weight: 600; }
+
+    /* LAYOUT */
+    .main { padding: 28px 40px; display: flex; flex-direction: column; gap: 22px; }
+    .tab-content { display: none; flex-direction: column; gap: 22px; }
+    .tab-content.active { display: flex; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+    /* CARD */
+    .card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 26px;
+      box-shadow: var(--shadow); transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .card:hover { border-color: var(--blue-mid); box-shadow: var(--shadow-md); }
+    .card-title {
+      font-size: 15px; font-weight: 700; color: var(--navy);
+      display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+    }
+    .card-title .icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; letter-spacing: -0.5px;
+    }
+    .icon-blue   { background: var(--blue-light); color: var(--blue-dark); border: 1px solid var(--blue-mid); }
+    .icon-navy   { background: var(--navy);        color: #fff; }
+    .icon-green  { background: #E6FAF4;             color: #008F67; border: 1px solid #A8E8D5; }
+    .icon-amber  { background: #FFF7E0;             color: #B37800; border: 1px solid #FFD97A; }
+    .icon-red    { background: #FDEAEA;             color: var(--red); border: 1px solid #F5B0AE; }
+
+    /* FORM */
+    label {
+      display: block; font-size: 12px; font-weight: 600; color: var(--text2);
+      margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    input, select, textarea {
+      width: 100%; padding: 9px 13px;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-family: inherit; font-size: 14px; outline: none; transition: all 0.2s;
+    }
+    textarea { resize: vertical; min-height: 110px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+    input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,186,242,0.12); background: #fff; }
+    select option { background: #fff; }
+    .form-row    { display: grid; gap: 14px; margin-bottom: 14px; }
+    .form-row.c2 { grid-template-columns: 1fr 1fr; }
+
+    /* BUTTONS */
+    .btn {
+      padding: 10px 22px; border: none; border-radius: var(--radius-sm);
+      font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.18s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+      color: #fff; box-shadow: 0 3px 14px rgba(0,186,242,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 4px 22px rgba(0,186,242,0.5); transform: translateY(-1px); }
+    .btn-secondary {
+      background: var(--surface2); color: var(--text2);
+      border: 1.5px solid var(--border);
+    }
+    .btn-secondary:hover { color: var(--navy); border-color: var(--blue-mid); background: var(--blue-light); }
+    .btn-red { background: #FDEAEA; color: var(--red); border: 1.5px solid #F5B0AE; }
+    .btn-red:hover { background: #FBCFCE; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+    .btn-sm { padding: 7px 14px; font-size: 13px; }
+    .btn-loading::after {
+      content: ''; width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* OUTPUT */
+    .output-box {
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px;
+      font-family: 'JetBrains Mono', monospace; font-size: 12px;
+      color: var(--text2); line-height: 1.7; min-height: 80px;
+      white-space: pre-wrap; word-break: break-all;
+      max-height: 380px; overflow-y: auto; transition: all 0.3s;
+    }
+    .output-box.success { border-color: #A8E8D5; background: #F0FBF7; color: #006B4F; }
+    .output-box.error   { border-color: #F5B0AE; background: #FEF2F2; color: #B01B18; }
+    .output-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ACTIONS */
+    .action-list { display: flex; flex-direction: column; gap: 12px; }
+    .action-item {
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); padding: 16px 18px;
+      animation: slideIn 0.3s ease forwards;
+    }
+    .action-item:hover { border-color: var(--blue-mid); }
+    @keyframes slideIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    .action-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+    .action-meta { display: flex; gap: 7px; flex-wrap: wrap; }
+    .tag { padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
+    .tag-blue   { background: var(--blue-light); color: var(--blue-dark); border: 1px solid var(--blue-mid); }
+    .tag-navy   { background: #E8EEF8;            color: var(--navy); border: 1px solid #C5D4EC; }
+    .tag-green  { background: #E6FAF4;            color: #008F67; border: 1px solid #A8E8D5; }
+    .tag-amber  { background: #FFF7E0;            color: #B37800; border: 1px solid #FFD97A; }
+    .action-body      { font-size: 14px; line-height: 1.6; color: var(--text); margin-bottom: 8px; }
+    .action-rationale { font-size: 12px; color: var(--text3); font-style: italic; }
+
+    /* CONVERSATION */
+    .convo-thread {
+      display: flex; flex-direction: column; gap: 12px;
+      min-height: 200px; max-height: 460px; overflow-y: auto; padding-right: 4px;
+    }
+    .bubble { max-width: 78%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.6; animation: slideIn 0.3s ease; }
+    .bubble.vera {
+      background: linear-gradient(135deg, var(--blue-light), #D8F0FB);
+      border: 1.5px solid var(--blue-mid); color: var(--navy);
+      align-self: flex-start; border-bottom-left-radius: 4px;
+    }
+    .bubble.merchant {
+      background: var(--navy); color: #fff;
+      align-self: flex-end; border-bottom-right-radius: 4px;
+    }
+    .bubble-label { font-size: 10px; font-weight: 700; color: var(--text3); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .bubble.vera .bubble-label { color: var(--blue-dark); }
+    .bubble.merchant .bubble-label { color: rgba(255,255,255,0.55); }
+    .bubble-cta {
+      display: inline-block; margin-top: 8px; padding: 4px 10px; border-radius: 6px;
+      font-size: 11px; font-weight: 600;
+      background: rgba(0,186,242,0.15); color: var(--blue-dark);
+      border: 1px solid var(--blue-mid);
+    }
+
+    /* META GRID */
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .meta-item { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+    .meta-item .key   { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: 600; }
+    .meta-item .value { font-size: 14px; font-weight: 500; color: var(--text); word-break: break-word; white-space: pre-wrap; }
+
+    /* TOAST */
+    #toast { position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+    .toast-msg {
+      padding: 11px 18px; border-radius: 10px;
+      background: var(--white); border: 1.5px solid var(--border);
+      font-size: 14px; font-weight: 500; color: var(--text);
+      box-shadow: 0 8px 30px rgba(0,41,112,0.15);
+      animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast-msg.ok  { border-color: #A8E8D5; }
+    .toast-msg.err { border-color: #F5B0AE; }
+    .toast-indicator { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .toast-msg.ok  .toast-indicator { background: var(--green); }
+    .toast-msg.err .toast-indicator { background: var(--red); }
+    @keyframes toastIn  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { from { opacity:1; } to { opacity:0; } }
+
+    /* MISC */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--blue-mid); border-radius: 3px; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+    .empty-state { text-align: center; padding: 40px; color: var(--text3); font-size: 14px; }
+    .empty-state .big { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--blue-mid); margin-bottom: 8px; }
+    .preset-list { display: flex; flex-direction: column; gap: 8px; }
+    .section-divider {
+      display: flex; align-items: center; gap: 12px; margin: 4px 0 16px;
+      font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    @media(max-width:900px) {
+      nav { padding: 0 20px; }
+      .hero { padding: 30px 20px; }
+      .main { padding: 20px; }
+      .tabs-bar { padding: 0 20px; }
+      .two-col { grid-template-columns: 1fr; }
+      .form-row.c2 { grid-template-columns: 1fr; }
+      .meta-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="brand-icon">V</div>
+    <div>
+      <div class="brand-name">Vera</div>
+      <div class="brand-sub">magicpin AI Challenge Bot</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <div class="status-pill" id="status-pill" onclick="fetchHealth()">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Checking...</span>
+    </div>
+    <span class="port-badge">:8765</span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">magicpin AI Challenge</div>
+  <h1>Merchant Engagement<br/>Command Center</h1>
+  <p>Load contexts, run ticks, simulate conversations and inspect every action Vera takes for your merchants — all in real-time.</p>
+  <div class="stats-row">
+    <div class="stat-chip"><div class="val" id="stat-cat">—</div><div class="lbl">Categories</div></div>
+    <div class="stat-chip"><div class="val" id="stat-merchant">—</div><div class="lbl">Merchants</div></div>
+    <div class="stat-chip"><div class="val" id="stat-customer">—</div><div class="lbl">Customers</div></div>
+    <div class="stat-chip"><div class="val" id="stat-trigger">—</div><div class="lbl">Triggers</div></div>
+    <div class="stat-chip"><div class="val" id="stat-uptime">—</div><div class="lbl">Uptime (s)</div></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs-bar">
+  <button class="tab-btn active" onclick="switchTab('context',this)">Load Context</button>
+  <button class="tab-btn" onclick="switchTab('tick',this)">Run Tick</button>
+  <button class="tab-btn" onclick="switchTab('reply',this)">Reply Sim</button>
+  <button class="tab-btn" onclick="switchTab('meta',this)">Metadata</button>
+  <button class="tab-btn" onclick="switchTab('teardown',this)">Teardown</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- CONTEXT -->
+  <div class="tab-content active" id="tc-context">
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title"><div class="icon icon-blue">CTX</div>Push Context</div>
+        <div class="form-row c2">
+          <div>
+            <label>Scope</label>
+            <select id="ctx-scope">
+              <option value="category">category</option>
+              <option value="merchant">merchant</option>
+              <option value="customer">customer</option>
+              <option value="trigger">trigger</option>
+            </select>
+          </div>
+          <div><label>Context ID</label><input id="ctx-id" type="text" placeholder="e.g. merchant_001"/></div>
+        </div>
+        <div class="form-row"><div><label>Version</label><input id="ctx-version" type="number" value="1" min="1"/></div></div>
+        <div class="form-row"><div><label>Payload (JSON)</label><textarea id="ctx-payload" placeholder='{"merchant_id":"m1"}'></textarea></div></div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:4px">
+          <button class="btn btn-primary" onclick="pushContext()" id="btn-ctx">Push Context</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadPreset('merchant_sample')">Load Sample</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="icon icon-green">OK</div>Response</div>
+        <div class="output-label">API Response</div>
+        <div class="output-box" id="ctx-output">Push a context to see the response...</div>
+        <div class="divider"></div>
+        <div class="section-divider">Quick Presets</div>
+        <div class="preset-list">
+          <button class="btn btn-secondary btn-sm" style="justify-content:flex-start" onclick="loadPreset('dentist_category')">Dentist Category</button>
+          <button class="btn btn-secondary btn-sm" style="justify-content:flex-start" onclick="loadPreset('merchant_sample')">Sample Merchant</button>
+          <button class="btn btn-secondary btn-sm" style="justify-content:flex-start" onclick="loadPreset('customer_sample')">Sample Customer</button>
+          <button class="btn btn-secondary btn-sm" style="justify-content:flex-start" onclick="loadPreset('trigger_perf_dip')">Perf Dip Trigger</button>
+          <button class="btn btn-secondary btn-sm" style="justify-content:flex-start" onclick="loadPreset('trigger_recall')">Recall Due Trigger</button>
+          <button class="btn btn-secondary btn-sm" style="justify-content:flex-start" onclick="loadPreset('trigger_festival')">Festival Trigger</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TICK -->
+  <div class="tab-content" id="tc-tick">
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title"><div class="icon icon-blue">RUN</div>Run Tick</div>
+        <div class="form-row"><div><label>Now (ISO 8601 — blank = current time)</label><input id="tick-now" type="text" placeholder="2024-06-10T10:00:00Z"/></div></div>
+        <div class="form-row"><div><label>Available Trigger IDs (comma-separated)</label><input id="tick-triggers" type="text" placeholder="trigger_perf_dip_001, trigger_recall_001"/></div></div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn btn-primary" onclick="runTick()" id="btn-tick">Run Tick</button>
+          <button class="btn btn-secondary btn-sm" onclick="clearTickResults()">Clear</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="icon icon-blue">STAT</div>Tick Stats</div>
+        <div class="meta-grid">
+          <div class="meta-item"><div class="key">Actions Generated</div><div class="value" id="tick-count">—</div></div>
+          <div class="meta-item"><div class="key">Eligible Triggers</div><div class="value" id="tick-eligible">—</div></div>
+          <div class="meta-item"><div class="key">Last Run</div><div class="value" id="tick-lastrun">—</div></div>
+          <div class="meta-item"><div class="key">Status</div><div class="value" id="tick-status">—</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="tick-actions-card" style="display:none">
+      <div class="card-title">
+        <div class="icon icon-green">ACT</div>Composed Actions
+        <span id="tick-actions-count" class="tag tag-green" style="margin-left:auto"></span>
+      </div>
+      <div class="action-list" id="tick-actions-list"></div>
+    </div>
+  </div>
+
+  <!-- REPLY -->
+  <div class="tab-content" id="tc-reply">
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title"><div class="icon icon-amber">MSG</div>Send Reply</div>
+        <div class="form-row c2">
+          <div><label>Conversation ID</label><input id="reply-conv" type="text" placeholder="conv_abc123"/></div>
+          <div><label>Merchant ID</label><input id="reply-merchant" type="text" placeholder="merchant_001"/></div>
+        </div>
+        <div class="form-row c2">
+          <div><label>Customer ID (optional)</label><input id="reply-customer" type="text" placeholder="cust_001"/></div>
+          <div><label>From Role</label>
+            <select id="reply-role">
+              <option value="merchant">merchant</option>
+              <option value="customer">customer</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row"><div><label>Turn Number</label><input id="reply-turn" type="number" value="1" min="1"/></div></div>
+        <div class="form-row"><div><label>Message</label><textarea id="reply-msg" style="min-height:80px" placeholder="Yes, let's do it!"></textarea></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="sendReply()" id="btn-reply">Send</button>
+          <button class="btn btn-secondary btn-sm" onclick="qmsg('Yes, let us proceed!')">Yes</button>
+          <button class="btn btn-secondary btn-sm" onclick="qmsg('STOP')">STOP</button>
+          <button class="btn btn-secondary btn-sm" onclick="qmsg('Thank you for contacting us, our team will get back to you.')">Auto-reply</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          <div class="icon icon-navy">THR</div>Conversation Thread
+          <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="clearThread()">Clear</button>
+        </div>
+        <div class="convo-thread" id="convo-thread">
+          <div class="empty-state"><div class="big">No messages yet</div>Send a reply to start the conversation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- META -->
+  <div class="tab-content" id="tc-meta">
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-blue">META</div>Bot Metadata
+        <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="fetchMeta()">Refresh</button>
+      </div>
+      <div class="meta-grid" id="meta-grid">
+        <div class="meta-item"><div class="key">Status</div><div class="value">Loading...</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-green">HLT</div>Health Check
+        <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="fetchHealth()">Refresh</button>
+      </div>
+      <div class="output-box" id="health-output">Fetching...</div>
+    </div>
+  </div>
+
+  <!-- TEARDOWN -->
+  <div class="tab-content" id="tc-teardown">
+    <div class="card" style="max-width:520px;margin:0 auto">
+      <div class="card-title"><div class="icon icon-red">DEL</div>Teardown — Wipe State</div>
+      <p style="color:var(--text2);font-size:14px;line-height:1.65;margin-bottom:22px">
+        Clears <strong>all in-memory contexts</strong> (categories, merchants, customers, triggers)
+        and resets all conversations and suppression keys. This cannot be undone.
+      </p>
+      <button class="btn btn-red" onclick="runTeardown()" id="btn-teardown">Wipe All State</button>
+      <div class="output-box" id="teardown-output" style="margin-top:20px;display:none"></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<div id="toast"></div>
+
+<script>
+const PRESETS = {
+  dentist_category: {scope:'category',id:'dentists',version:1,payload:{slug:'dentists',label:'Dental Clinics',voice:{tone:'professional',language_mix:'hi_en'},peer_stats:{avg_ctr:0.035,avg_views_30d:1200},taboo_terms:['cheapest','best in city','guaranteed'],offer_catalog:[{title:'Free consultation',category:'dental'}],digest:[{title:'Study: Laser whitening safe in diabetics',source:'JADA 2024',trial_n:340,patient_segment:'diabetics'}]}},
+  merchant_sample:  {scope:'merchant',id:'merchant_001',version:1,payload:{merchant_id:'merchant_001',category_slug:'dentists',identity:{name:'Dr. Mehta Dental Clinic',owner_first_name:'Raj',locality:'Lajpat Nagar',city:'Delhi'},performance:{views:980,calls:42,ctr:0.043},subscription:{plan:'Pro',days_remaining:12},offers:[{title:'Root canal + crown Rs.8,999',active:true}],signals:['high_review_sentiment','missed_last_campaign'],customer_aggregate:{retention_6mo_pct:0.62}}},
+  customer_sample:  {scope:'customer',id:'cust_001',version:1,payload:{customer_id:'cust_001',merchant_id:'merchant_001',identity:{first_name:'Priya',last_name:'Sharma'},consent:{opted_in_at:'2024-01-15T10:00:00Z',scope:['recall','promotional']},relationship:{last_visit:'2024-04-20',visit_count:4}}},
+  trigger_perf_dip: {scope:'trigger',id:'trigger_perf_dip_001',version:1,payload:{id:'trigger_perf_dip_001',kind:'perf_dip',merchant_id:'merchant_001',urgency:3,suppression_key:'sk:perf_dip:merchant_001',payload:{metric:'calls',delta_pct:-0.28,vs_baseline:55},expires_at:'2099-12-31T23:59:59Z'}},
+  trigger_recall:   {scope:'trigger',id:'trigger_recall_001',version:1,payload:{id:'trigger_recall_001',kind:'recall_due',merchant_id:'merchant_001',customer_id:'cust_001',urgency:4,suppression_key:'sk:recall:cust_001',payload:{service_due:'dental_checkup',available_slots:[{label:'Mon 3pm'},{label:'Tue 11am'}]},expires_at:'2099-12-31T23:59:59Z'}},
+  trigger_festival: {scope:'trigger',id:'trigger_festival_001',version:1,payload:{id:'trigger_festival_001',kind:'festival_upcoming',merchant_id:'merchant_001',urgency:2,suppression_key:'sk:festival:merchant_001',payload:{festival:'Diwali',days_until:7},expires_at:'2099-12-31T23:59:59Z'}}
+};
+
+function toast(msg, type='ok') {
+  const el = document.createElement('div');
+  el.className = 'toast-msg ' + type;
+  el.innerHTML = '<div class="toast-indicator"></div>' + msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+function setLoading(id, v) {
+  const b = document.getElementById(id); if (!b) return;
+  b.disabled = v; v ? b.classList.add('btn-loading') : b.classList.remove('btn-loading');
+}
+async function api(path, opts={}) {
+  const r = await fetch(path, {headers:{'Content-Type':'application/json'}, ...opts});
+  const d = await r.json(); return {status: r.status, data: d};
+}
+const pj  = o => JSON.stringify(o, null, 2);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function qmsg(m) { document.getElementById('reply-msg').value = m; }
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(e => e.classList.remove('active'));
+  document.getElementById('tc-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'meta') { fetchMeta(); fetchHealth(); }
+}
+
+async function fetchHealth() {
+  try {
+    const {data} = await api('/v1/healthz');
+    const dot = document.getElementById('status-dot'), txt = document.getElementById('status-text');
+    if (data.status === 'ok') { dot.classList.remove('offline'); txt.textContent = 'Online'; }
+    else { dot.classList.add('offline'); txt.textContent = 'Error'; }
+    const ctx = data.contexts_loaded || {};
+    document.getElementById('stat-cat').textContent      = ctx.category  ?? '—';
+    document.getElementById('stat-merchant').textContent = ctx.merchant  ?? '—';
+    document.getElementById('stat-customer').textContent = ctx.customer  ?? '—';
+    document.getElementById('stat-trigger').textContent  = ctx.trigger   ?? '—';
+    document.getElementById('stat-uptime').textContent   = data.uptime_seconds ?? '—';
+    const hbox = document.getElementById('health-output');
+    hbox.textContent = pj(data); hbox.className = 'output-box success';
+  } catch(e) {
+    document.getElementById('status-dot').classList.add('offline');
+    document.getElementById('status-text').textContent = 'Offline';
+    const hbox = document.getElementById('health-output');
+    hbox.textContent = 'Could not reach bot\n' + e.message; hbox.className = 'output-box error';
+  }
+}
+
+async function fetchMeta() {
+  try {
+    const {data} = await api('/v1/metadata');
+    document.getElementById('meta-grid').innerHTML = Object.entries(data)
+      .map(([k,v]) => `<div class="meta-item"><div class="key">${k.replace(/_/g,' ')}</div><div class="value">${typeof v==='object'?pj(v):esc(v)}</div></div>`)
+      .join('');
+  } catch(e) {
+    document.getElementById('meta-grid').innerHTML = `<div class="meta-item"><div class="key">Error</div><div class="value">${e.message}</div></div>`;
+  }
+}
+
+function loadPreset(name) {
+  const p = PRESETS[name]; if (!p) return;
+  document.getElementById('ctx-scope').value   = p.scope;
+  document.getElementById('ctx-id').value      = p.id;
+  document.getElementById('ctx-version').value = p.version;
+  document.getElementById('ctx-payload').value = pj(p.payload);
+  toast('Loaded preset: ' + name, 'ok');
+}
+
+async function pushContext() {
+  const scope      = document.getElementById('ctx-scope').value;
+  const context_id = document.getElementById('ctx-id').value.trim();
+  const version    = parseInt(document.getElementById('ctx-version').value);
+  let payload = {};
+  try { payload = JSON.parse(document.getElementById('ctx-payload').value || '{}'); }
+  catch(e) { toast('Invalid JSON in payload!', 'err'); return; }
+  if (!context_id) { toast('Context ID is required', 'err'); return; }
+  setLoading('btn-ctx', true);
+  try {
+    const {status, data} = await api('/v1/context', {method:'POST', body:JSON.stringify({scope, context_id, version, payload})});
+    const box = document.getElementById('ctx-output');
+    box.textContent = pj(data); box.className = 'output-box ' + (status < 300 ? 'success' : 'error');
+    toast(status < 300 ? 'Context pushed (' + status + ')' : 'Error ' + status, status < 300 ? 'ok' : 'err');
+    fetchHealth();
+  } catch(e) {
+    const box = document.getElementById('ctx-output'); box.textContent = 'Network error: ' + e.message; box.className = 'output-box error';
+    toast('Network error', 'err');
+  }
+  setLoading('btn-ctx', false);
+}
+
+async function runTick() {
+  const now = document.getElementById('tick-now').value.trim() || null;
+  const raw = document.getElementById('tick-triggers').value.trim();
+  const available_triggers = raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : [];
+  setLoading('btn-tick', true);
+  try {
+    const {status, data} = await api('/v1/tick', {method:'POST', body:JSON.stringify({now, available_triggers})});
+    const actions = data.actions || [];
+    document.getElementById('tick-count').textContent    = actions.length;
+    document.getElementById('tick-eligible').textContent = available_triggers.length;
+    document.getElementById('tick-lastrun').textContent  = new Date().toLocaleTimeString();
+    document.getElementById('tick-status').textContent   = status < 300 ? 'OK' : 'ERROR ' + status;
+    document.getElementById('tick-actions-count').textContent = actions.length + ' actions';
+    const card = document.getElementById('tick-actions-card');
+    const list = document.getElementById('tick-actions-list');
+    card.style.display = 'block';
+    if (actions.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="big">No Actions</div>No eligible triggers. Load contexts first and include their IDs above.</div>';
+    } else {
+      list.innerHTML = actions.map((a,i) =>
+        `<div class="action-item" style="animation-delay:${i*0.05}s">
+          <div class="action-item-header">
+            <div class="action-meta">
+              <span class="tag tag-blue">${esc(a.trigger_id||'—')}</span>
+              <span class="tag tag-navy">${esc(a.merchant_id||'—')}</span>
+              ${a.customer_id ? `<span class="tag tag-amber">${esc(a.customer_id)}</span>` : ''}
+              <span class="tag tag-green">${esc(a.cta||'none')}</span>
+              <span class="tag ${a.send_as==='vera'?'tag-blue':'tag-amber'}">${esc(a.send_as||'')}</span>
+            </div>
+            <div style="font-size:11px;color:var(--text3);font-family:JetBrains Mono,monospace">${esc(a.template_name||'')}</div>
+          </div>
+          <div class="action-body">${esc(a.body||'')}</div>
+          <div class="action-rationale">${esc(a.rationale||'')}</div>
+          ${a.conversation_id ? `<div style="font-size:11px;color:var(--text3);margin-top:8px;font-family:JetBrains Mono,monospace">conv: ${esc(a.conversation_id)}</div>` : ''}
+        </div>`
+      ).join('');
+      if (actions[0]) {
+        document.getElementById('reply-conv').value     = actions[0].conversation_id || '';
+        document.getElementById('reply-merchant').value = actions[0].merchant_id || '';
+        if (actions[0].customer_id) document.getElementById('reply-customer').value = actions[0].customer_id;
+      }
+    }
+    toast('Tick complete: ' + actions.length + ' action(s)', 'ok');
+  } catch(e) { toast('Tick error: ' + e.message, 'err'); }
+  setLoading('btn-tick', false);
+}
+
+function clearTickResults() {
+  document.getElementById('tick-actions-card').style.display = 'none';
+  ['tick-count','tick-eligible','tick-lastrun','tick-status'].forEach(id => document.getElementById(id).textContent = '—');
+}
+
+let threadTurn = 1;
+function clearThread() {
+  document.getElementById('convo-thread').innerHTML = '<div class="empty-state"><div class="big">No messages yet</div>Send a reply to start the conversation</div>';
+  threadTurn = 1; document.getElementById('reply-turn').value = 1;
+}
+
+async function sendReply() {
+  const conversation_id = document.getElementById('reply-conv').value.trim();
+  const merchant_id     = document.getElementById('reply-merchant').value.trim();
+  const customer_id     = document.getElementById('reply-customer').value.trim() || null;
+  const from_role       = document.getElementById('reply-role').value;
+  const message         = document.getElementById('reply-msg').value.trim();
+  const turn_number     = parseInt(document.getElementById('reply-turn').value) || threadTurn;
+  if (!conversation_id || !merchant_id) { toast('conversation_id and merchant_id required', 'err'); return; }
+  setLoading('btn-reply', true);
+  const thread = document.getElementById('convo-thread');
+  if (thread.querySelector('.empty-state')) thread.innerHTML = '';
+  const ub = document.createElement('div'); ub.className = 'bubble merchant';
+  ub.innerHTML = `<div class="bubble-label">${from_role}</div>${esc(message)}`;
+  thread.appendChild(ub);
+  try {
+    const {status, data} = await api('/v1/reply', {method:'POST', body:JSON.stringify({conversation_id, merchant_id, customer_id, from_role, message, turn_number})});
+    const vb = document.createElement('div'); vb.className = 'bubble vera';
+    if (data.action === 'send') {
+      vb.innerHTML = `<div class="bubble-label">Vera</div>${esc(data.body||'')}${data.cta?`<div class="bubble-cta">${esc(data.cta)}</div>`:''}<div style="font-size:11px;color:var(--text3);margin-top:6px">${esc(data.rationale||'')}</div>`;
+    } else if (data.action === 'wait') {
+      vb.innerHTML = `<div class="bubble-label">Vera</div>WAIT (${data.wait_seconds}s)<div style="font-size:11px;color:var(--text3);margin-top:4px">${esc(data.rationale||'')}</div>`;
+    } else if (data.action === 'end') {
+      vb.innerHTML = `<div class="bubble-label">Vera</div>CONVERSATION ENDED<div style="font-size:11px;color:var(--text3);margin-top:4px">${esc(data.rationale||'')}</div>`;
+      vb.style.opacity = '0.6';
+    } else {
+      vb.innerHTML = `<div class="bubble-label">Vera</div><pre style="font-size:12px">${pj(data)}</pre>`;
+    }
+    thread.appendChild(vb); thread.scrollTop = thread.scrollHeight;
+    threadTurn++; document.getElementById('reply-turn').value = threadTurn; document.getElementById('reply-msg').value = '';
+    toast('Reply: action=' + data.action, status < 300 ? 'ok' : 'err');
+  } catch(e) { toast('Reply error: ' + e.message, 'err'); }
+  setLoading('btn-reply', false);
+}
+
+async function runTeardown() {
+  if (!confirm('Are you sure? This will wipe ALL in-memory state.')) return;
+  setLoading('btn-teardown', true);
+  try {
+    const {data} = await api('/v1/teardown', {method:'POST'});
+    const box = document.getElementById('teardown-output');
+    box.style.display = 'block'; box.textContent = pj(data); box.className = 'output-box success';
+    toast('State wiped successfully', 'ok');
+    fetchHealth(); clearThread(); clearTickResults();
+  } catch(e) { toast('Teardown error: ' + e.message, 'err'); }
+  setLoading('btn-teardown', false);
+}
+
+fetchHealth();
+setInterval(fetchHealth, 15000);
+</script>
+</body>
+</html>
